@@ -1,0 +1,7 @@
+{% set regime = market_regime() %}
+<span id="regime-badge"
+      class="regime-badge {% if regime.state == 'strong' %}regime-strong{% elif regime.state == 'weak' %}regime-weak{% else %}regime-unknown{% endif %}"
+      title="{{ regime.detail or '市场强弱：双指数（上证+创业板）+ ±1% 滞回带' }}"
+      hx-get="/partials/regime" hx-trigger="every 60s" hx-swap="outerHTML">
+  {{ regime.label }}
+</span>

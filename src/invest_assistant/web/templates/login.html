@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>登录 · 投资助手</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body class="login-body">
+<form class="login-card" method="post" action="/login">
+  <h1>📈 投资助手</h1>
+  {% if error %}<p class="warn">{{ error }}</p>{% endif %}
+  <input type="password" name="password" placeholder="面板密码" autofocus required>
+  <button type="submit">进入</button>
+</form>
+</body>
+</html>

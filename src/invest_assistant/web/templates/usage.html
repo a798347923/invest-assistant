@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}用量 · 投资助手{% endblock %}
+{% block content %}
+<h1>LLM 用量</h1>
+
+{% if summary.over_threshold %}
+<p class="warn">
+  ⚠️ 今日花费 ¥{{ "%.4f"|format(summary.today_cost) }} 已超过软阈值
+  ¥{{ "%.2f"|format(summary.threshold) }}（仅提示，不降级、不停止任何功能）
+</p>
+{% endif %}
+
+<div class="cards" style="margin-bottom:16px">
+  <div class="card">
+    <div class="label">今日花费</div>
+    <div class="value">¥{{ "%.4f"|format(summary.today_cost) }}</div>
+  </div>
+  <div class="card">
+    <div class="label">软阈值</div>
+    <div class="value small">¥{{ "%.2f"|format(summary.threshold) }}</div>
+  </div>
+</div>
+
+<h2 style="font-size:16px">近 7 天</h2>
+<table>
+  <thead><tr><th>日期</th><th>tokens</th><th>花费（元）</th></tr></thead>
+  <tbody>
+  {% for d in summary.days %}
+    <tr><td>{{ d.date }}</td><td>{{ d.tokens }}</td><td>{{ "%.4f"|format(d.cost) }}</td></tr>
+  {% endfor %}
+  {% if not summary.days %}<tr><td colspan="3" class="muted">暂无记录</td></tr>{% endif %}
+  </tbody>
+</table>
+
+<h2 style="font-size:16px;margin-top:20px">最近调用</h2>
+<table>
+  <thead>
+    <tr><th>时间</th><th>用途</th><th>模型</th><th>输入</th><th>输出</th><th>费用（元）</th></tr>
+  </thead>
+  <tbody>
+  {% for row in recent %}
+    <tr>
+      <td class="muted">{{ row.ts.strftime("%m-%d %H:%M") }}</td>
+      <td>{{ row.purpose }}</td>
+      <td class="muted">{{ row.model }}</td>
+      <td>{{ row.tokens_in }}</td>
+      <td>{{ row.tokens_out }}</td>
+      <td>{{ "%.4f"|format(row.cost_est or 0) }}</td>
+    </tr>
+  {% endfor %}
+  {% if not recent %}<tr><td colspan="6" class="muted">暂无记录</td></tr>{% endif %}
+  </tbody>
+</table>
+
+<p class="muted">价格参数在 config.yaml 的 llm.pricing 维护（元/百万 tokens），以 DeepSeek 官网价为准。</p>
+{% endblock %}

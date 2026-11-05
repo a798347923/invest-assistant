@@ -1,0 +1,96 @@
+# 非密钥配置（版本化）。密钥请放 .env（gitignore）。
+poll:
+  interval_minutes: 1      # 盘中盯盘频率（分钟）；1 = 每分钟检查一次
+  windows: ["09:30-11:30", "13:00-15:00"]
+
+notify:
+  daily_push_limit: 30
+
+llm:
+  model: deepseek-chat
+  deep_model: deepseek-reasoner  # 清仓复盘用「高级模型」（设置页可改；如你的 API 支持其他型号名称可直接填）
+  soft_daily_cost_alert_cny: 5
+  max_news_per_analysis: 8
+  pricing:            # 元/百万 tokens（按 DeepSeek 官网价维护）
+    input: 2.0
+    output: 8.0
+
+screen:
+  daily_candidates: 5      # 每日候选上限（买点评估后全局取 Top N）
+  setup_required: true     # 只选有明确买点（回踩支撑/突破在即/超跌企稳）的候选
+  setup_eval_limit: 40     # 买点评估最多拉取多少只的日线（按模板评分排序取前 N）
+  weak_market_candidates: 3  # 弱市（上证<20日线）候选上限（经验：弱市收紧）
+
+backtest:
+  slots: 5
+  fees:
+    commission_rate: 0.00025
+    commission_min: 5
+    stamp_tax_sell: 0.0005
+    slippage: 0.001
+  fundamentals_lag_days_fallback: 45
+
+backup:
+  keep: 30
+
+watchlist:
+  default_alert_pct: 5.0   # 自选异动默认阈值（%）；单项设 0 可关闭该股异动
+  movement_alerts: false   # 自选异动提醒总开关（日内涨跌幅）；false=全部不推送（单项阈值不生效）
+  suppress_plan_alerts_in_weak: true  # 弱市暂停买入时，不推送「买入机会」到价提醒（其余提醒照常）
+
+market:
+  regime_band_pct: 1.0     # 市场强弱判定（加强版）：上证+创业板双指数，各相对自身 MA20，
+                           # ±该比例滞回带；任一破位才转弱，两者都修复才转强（减少均线附近翻转）
+
+paper:
+  enabled: true            # 模拟盘（纸面交易）总开关
+  initial_cash: 50000      # 初始资金（元）——可自由调整
+  position_fraction: 0.2   # 单笔自动买入金额 = 组合资产 × 该比例
+  max_positions: 5         # 最多同时持有标的数
+  max_position_weight: 0.3 # 单标的市值上限（占组合比例，加仓时也受此限制）
+  ai_veto: true            # 每次买入/卖出前先让 AI 复核，反对则取消本次操作
+  ai_veto_exempt_stops: true    # 纪律止损不受 AI 否决（保护性卖出优先执行）
+  ai_veto_cooldown_minutes: 15  # 同一标的同一方向重复询问的最短间隔（分钟内复用上次结论）
+  ai_veto_max_per_day: 8        # 每标的每日最多询问次数（超出后：买入保守取消、卖出照常）
+  apply_replay_v3: true    # 固化历史回放经验：弱市暂停买入 / 回踩须站上MA5 / 形态差异化机械止损
+  risk_based_sizing: false # 波动率平价配仓：2026-11-05 跨股票池复验不通过（原池训练持平/验证+19pp，陌生池训练+12pp/验证-9pp），已回退
+  risk_ref_stop_pct: 6     # 参考止损距离（%）：止损比它远则减仓（最少一半），近则加仓（最多 max_position_weight）
+  parking_enabled: true    # 弱市停泊：闲置现金停到 债7:金3（验证通过；2026-11-04 纸面开启）
+  parking_bond: "511260"   # 十年国债 ETF
+  parking_gold: "518880"   # 黄金 ETF
+  parking_bond_weight: 0.7 # 债券腿权重
+  parking_gold_weight: 0.3 # 黄金腿权重
+  parking_min_amount: 1000 # 单腿最小金额（元），低于则不买
+
+live:
+  enabled: false           # 实盘总开关（默认关）
+  semi_auto_enabled: true  # 半自动：生成指令单 + 人工在东财客户端下单 + 回填
+  executor: manual         # manual=只出指令单 / ui_app=自动驱动东财 App 下单
+  dry_run: true            # 自动执行时只填单校验、不点提交（默认开；连跑 2 周再考虑关）
+  app:                     # executor=ui_app 时生效（MuMu 里的东财 App，ADB 驱动）
+    package: com.eastmoney.android.berlin   # 东财 App 包名（如装的是东方财富证券 App 请改成实际包名）
+    adb_path: ""           # 空=自动探测 MuMu 的 adb
+    device: ""             # 空=取第一个在线设备；多开时填 serial（如 127.0.0.1:16384）
+    buy_tab: "买入"         # 交易页「买入」入口文案
+    sell_tab: "卖出"
+    confirm: ["确定", "确认"]        # 下单后的确认弹窗按钮
+    success: ["已委托", "委托成功", "已受理", "提交成功", "已提交"]
+    settle_seconds: 1.5    # 提交后等待多久再读结果
+    screenshot: true       # 每步截图存 data/live_orders/
+  mirror_paper_entries: true   # 模拟盘自动买入成功 → 同步生成实盘买入指令（半自动）
+  max_order_amount: 5000   # 单笔金额上限（元）；也是镜像买入的预算
+  max_position_weight: 0.2 # 单标的市值上限（占组合比例）
+  max_daily_orders: 4      # 单日指令上限
+  max_daily_buy_amount: 20000  # 单日买入金额上限（元）
+  price_deviation_pct: 1.0 # 限价偏离参考价上限（%）
+  whitelist: watchlist     # watchlist / candidates / off（仅约束买入；卖出不受限）
+  trading_window: ["09:35-11:25", "13:05-14:55"]  # 允许买入的时段（卖出不受限）
+  circuit_breaker_index_pct: -1.5  # 指数急跌熔断（当日暂停新开仓）
+  default_take_profit_pct: 12  # 回填买入时写入实盘持仓的默认止盈（%，P2 余仓目标）
+  partial_take_profit_pct: 10  # 到 +10% 生成“减半卖出”指令（P2）
+  partial_fraction: 0.5        # 减半比例
+  default_stop_loss_pct: 8     # 默认止损（%）
+  default_max_holding_days: 30 # 默认最长持有（天）
+  announcement_filter: true    # 实盘买入前检查近期公告（负面关键词 → 跳过；取不到公告则放行）
+  announcement_limit: 20       # 检查最近多少条公告
+  announcement_block_keywords: ["减持", "解禁", "立案", "调查", "问询", "预亏", "下修", "风险警示", "退市", "处罚"]

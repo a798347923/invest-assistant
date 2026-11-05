@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}复盘 · 投资助手{% endblock %}
+{% block content %}
+<h1>复盘 <span class="muted" style="font-size:13px">（交易日志 + 清仓经验库 + 预测校准；经验与校准结论自动注入后续 AI 提示词）</span></h1>
+{% if pending %}<p class="warn">有 {{ pending }} 笔已清仓交易待生成复盘（每日 15:30/15:40 自动复盘，也可运行 <code>once eod</code> 立即生成）。</p>{% endif %}
+
+<h2>预测校准（建议质量统计）</h2>
+{% if calibration %}
+<div class="card" style="padding:10px 14px;margin:8px 0">
+  <div><strong>最新校准（{{ calibration.date.isoformat() }}）</strong></div>
+  <p style="margin:6px 0">{{ calibration.summary }}</p>
+  {% if calibration.content_json and calibration.content_json.findings %}
+  <ul style="margin:4px 0 0 18px;font-size:13px">
+    {% for f in calibration.content_json.findings %}<li>{{ f }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+</div>
+{% else %}
+<p class="muted">尚无校准报告（每周六 10:15 自动生成，首次会回填近 90 天分析卡；也可运行 <code>once calibration</code> 立即生成）。</p>
+{% endif %}
+
+{% if predictions %}
+<table>
+  <thead><tr><th>预测日</th><th>标的</th><th>建议</th><th>当时环境</th><th>校准结论</th><th>建议后10日</th></tr></thead>
+  <tbody>
+  {% for p in predictions %}
+    <tr>
+      <td class="muted">{{ p.date.isoformat() }}</td>
+      <td>{{ p.code }}</td>
+      <td>{{ p.action }}</td>
+      <td class="muted" style="font-size:12px">{{ p.regime or "—" }}｜{{ p.trend or "—" }}</td>
+      <td>{{ (p.outcome_json or {}).get("verdict") or "—" }}</td>
+      <td class="{{ 'ok' if ((p.outcome_json or {}).get('ret10') or 0) >= 0 else 'bad' }}">
+        {% if (p.outcome_json or {}).get("ret10") is not none %}{{ "%+.1f"|format((p.outcome_json or {}).get("ret10")) }}%{% else %}—{% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<h2>经验教训（{{ lessons|length }}）</h2>
+{% for l in lessons %}
+<div class="card" style="padding:10px 14px;margin:8px 0">
+  <div>
+    <strong>{{ l.name or l.code }}</strong>
+    <span class="muted">{{ l.code }} · {{ {"paper": "模拟盘", "position": "实盘", "replay": "历史模拟"}.get(l.source, l.source) }}
+      · {{ l.entry_date }} → {{ l.exit_date }} · 持有 {{ l.holding_days }} 天 ·
+      {% if l.source == "replay" %}
+        平均收益 <span class="{{ 'ok' if l.pnl >= 0 else 'bad' }}">{{ "%+.2f"|format(l.pnl) }}%</span> · 胜率 {{ "%.0f"|format(l.pnl_pct) }}%
+      {% else %}
+        净盈亏 <span class="{{ 'ok' if l.pnl >= 0 else 'bad' }}">{{ "%+.0f"|format(l.pnl) }}（{{ "%+.2f"|format(l.pnl_pct) }}%）</span>
+      {% endif %}
+      · 评价 {{ l.rating or "—" }}
+      <span style="font-size:11px">（{{ l.model }}）</span>
+    </span>
+  </div>
+  <p style="margin:6px 0">{{ l.summary }}</p>
+  <ul style="margin:4px 0 0 18px;font-size:13px">
+    {% for x in l.lessons_json %}<li>{{ x }}</li>{% endfor %}
+  </ul>
+</div>
+{% endfor %}
+{% if not lessons %}
+<p class="muted">暂无经验教训（每笔清仓后由高级模型自动复盘生成；模拟盘与实盘都覆盖）。</p>
+{% endif %}
+
+<h2>操作流水（最近 100 条）</h2>
+<table>
+  <thead><tr><th>时间</th><th>来源</th><th>操作</th><th>标的</th><th>数量</th><th>价格</th><th>盈亏</th><th>原因</th></tr></thead>
+  <tbody>
+  {% for e in entries %}
+    <tr>
+      <td class="muted">{{ e.ts.strftime("%m-%d %H:%M") }}</td>
+      <td>{{ "模拟" if e.source == "paper" else "实盘" }}</td>
+      <td>{{ e.action }}</td>
+      <td>{{ e.name or e.code }} <span class="muted">{{ e.code }}</span></td>
+      <td>{{ "%g"|format(e.qty) }}</td>
+      <td>{{ "%.4f"|format(e.price) if e.price else "—" }}</td>
+      <td class="{{ 'ok' if (e.realized_pnl or 0) >= 0 else 'bad' }}">
+        {{ "%+.0f"|format(e.realized_pnl) if e.realized_pnl is not none else "—" }}
+      </td>
+      <td class="muted" style="font-size:12px">{{ e.reason }}</td>
+    </tr>
+  {% endfor %}
+  {% if not entries %}<tr><td colspan="8" class="muted">暂无操作记录（建仓/卖出/模拟盘成交都会自动记录）。</td></tr>{% endif %}
+  </tbody>
+</table>
+{% endblock %}

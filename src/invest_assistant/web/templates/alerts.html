@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}提醒历史 · 投资助手{% endblock %}
+{% block content %}
+<h1>提醒历史</h1>
+<div class="row" style="margin-bottom:12px">
+  {% for key, label in tabs.items() %}
+    <a class="btn {% if key != status %}ghost{% endif %}" href="/alerts?status={{ key }}">{{ label }}</a>
+  {% endfor %}
+</div>
+<table>
+  <thead>
+    <tr>
+      <th>时间</th><th>标的</th><th>触发原因</th><th>价格 / 盈亏</th>
+      <th>状态</th><th>AI 判断</th><th>操作</th>
+    </tr>
+  </thead>
+  {% for row in rows %}{% include "alerts_row.html" %}{% endfor %}
+  {% if not rows %}
+    <tbody><tr><td colspan="7" class="muted">暂无记录</td></tr></tbody>
+  {% endif %}
+</table>
+{% endblock %}

@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}设置 · 投资助手{% endblock %}
+{% block content %}
+<h1>设置</h1>
+{% if saved %}<p class="ok">{{ saved }}</p>{% endif %}
+{% if error %}<p class="warn">操作失败：{{ error }}</p>{% endif %}
+
+<div class="row" style="gap:10px;flex-wrap:wrap;margin:10px 0">
+  <div class="card" style="padding:10px 14px;min-width:120px">
+    <div class="muted" style="font-size:12px">版本</div>
+    <div>v{{ version }}</div>
+  </div>
+  <div class="card" style="padding:10px 14px;min-width:200px">
+    <div class="muted" style="font-size:12px">调度心跳（每分钟一写）</div>
+    <div>{{ heartbeat }}</div>
+  </div>
+  <div class="card" style="padding:10px 14px;min-width:180px">
+    <div class="muted" style="font-size:12px">最近一次轮询</div>
+    <div>{{ last_poll }}</div>
+  </div>
+  <div class="card" style="padding:10px 14px;min-width:110px">
+    <div class="muted" style="font-size:12px">数据库</div>
+    <div>{{ db_size_mb }} MB</div>
+  </div>
+  <div class="card" style="padding:10px 14px;min-width:170px">
+    <div class="muted" style="font-size:12px">备份（{{ backup_count }} 份）</div>
+    <div style="font-size:12px">{{ latest_backup }}</div>
+  </div>
+</div>
+
+<h2>密钥与通知（.env，只读）</h2>
+<table>
+  <thead><tr><th>项目</th><th>状态</th><th>当前值</th></tr></thead>
+  <tbody>
+  {% for s in secrets %}
+    <tr>
+      <td>{{ s.name }}</td>
+      <td>{% if s.ok %}<span class="ok">✔ 已配置</span>{% else %}<span class="bad">✘ 未配置</span>{% endif %}</td>
+      <td class="muted">{{ s.hint or "—" }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="muted">
+  密钥类配置在项目根目录 <code>.env</code>（gitignore）修改，重启服务生效。
+  日志文件：<code>{{ log_file }}</code>｜备份目录：<code>{{ backup_dir }}</code>
+</p>
+<form class="inline" method="post" action="/settings/test-notify">
+  <button type="submit" class="small">发送测试通知</button>
+</form>
+<form class="inline" method="post" action="/settings/backup">
+  <button type="submit" class="small ghost">立即备份数据库</button>
+</form>
+
+<h2>运行参数</h2>
+<form method="post" action="/settings" class="card" style="padding:16px">
+  <p><strong>盘中轮询</strong></p>
+  <p>
+    <label>频率（分钟，1~60）
+      <input name="poll_interval_minutes" value="{{ poll.interval_minutes }}" style="width:70px">
+    </label>
+    <label>监控时段（逗号分隔）
+      <input name="poll_windows" value="{{ poll.windows }}" style="width:260px">
+    </label>
+  </p>
+
+  <p><strong>自选池 / 通知</strong></p>
+  <p>
+    <label>
+      <input type="checkbox" name="watchlist_movement_alerts" {% if watchlist_cfg.movement_alerts %}checked{% endif %}>
+      自选异动提醒（日内涨跌幅）
+    </label>
+    <label>异动阈值（%，仅在上项开启时生效）
+      <input name="watchlist_default_alert_pct" value="{{ watchlist_cfg.default_alert_pct }}" style="width:70px">
+    </label>
+    <label>每日推送上限
+      <input name="notify_daily_push_limit" value="{{ notify_cfg.daily_push_limit }}" style="width:70px">
+    </label>
+  </p>
+
+  <p><strong>候选池（每日 18:30）</strong></p>
+  <p>
+    <label>每日候选数
+      <input name="screen_daily_candidates" value="{{ screen.daily_candidates }}" style="width:60px">
+    </label>
+    <label>买点评估只数
+      <input name="screen_setup_eval_limit" value="{{ screen.setup_eval_limit }}" style="width:60px">
+    </label>
+    <label>
+      <input type="checkbox" name="screen_setup_required" {% if screen.setup_required %}checked{% endif %}>
+      只保留有明确买点的候选
+    </label>
+  </p>
+
+  <p><strong>模拟盘（纸面交易）</strong></p>
+  <p>
+    <label>
+      <input type="checkbox" name="paper_enabled" {% if paper.enabled %}checked{% endif %}>
+      启用
+    </label>
+    <label>初始资金（元）
+      <input name="paper_initial_cash" value="{{ paper.initial_cash }}" style="width:100px">
+    </label>
+    <label>单笔仓位比例（0.01~1）
+      <input name="paper_position_fraction" value="{{ paper.position_fraction }}" style="width:70px">
+    </label>
+  </p>
+  <p>
+    <label>最大持仓数
+      <input name="paper_max_positions" value="{{ paper.max_positions }}" style="width:60px">
+    </label>
+    <label>单标的上限比例（0.05~1）
+      <input name="paper_max_position_weight" value="{{ paper.max_position_weight }}" style="width:70px">
+    </label>
+  </p>
+  <p>
+    <label>
+      <input type="checkbox" name="paper_ai_veto" {% if paper.ai_veto %}checked{% endif %}>
+      AI 复核（买卖前先问模型，反对即取消本次操作）
+    </label>
+    <label>
+      <input type="checkbox" name="paper_ai_veto_exempt_stops" {% if paper.ai_veto_exempt_stops %}checked{% endif %}>
+      纪律止损豁免复核（保命优先）
+    </label>
+    <label>
+      <input type="checkbox" name="paper_apply_replay_v3" {% if paper.apply_replay_v3 %}checked{% endif %}>
+      固化回放经验 v12（弱市暂停买入 / 回踩增强确认 / 目标+12% 到+10%减半 / 形态差异化机械止损）
+    </label>
+  </p>
+  <p>
+    <label>复核冷却（分钟）
+      <input name="paper_ai_veto_cooldown_minutes" value="{{ paper.ai_veto_cooldown_minutes }}" style="width:60px">
+    </label>
+    <label>复核每日上限（次）
+      <input name="paper_ai_veto_max_per_day" value="{{ paper.ai_veto_max_per_day }}" style="width:60px">
+    </label>
+  </p>
+
+  <p><strong>LLM / 备份</strong></p>
+  <p>
+    <label>模型
+      <input name="llm_model" value="{{ llm.model }}" style="width:160px">
+    </label>
+    <label>清仓复盘高级模型
+      <input name="llm_deep_model" value="{{ llm.deep_model }}" style="width:160px">
+    </label>
+    <label>单日成本告警（元）
+      <input name="llm_soft_daily_cost_alert_cny" value="{{ llm.soft_daily_cost_alert_cny }}" style="width:70px">
+    </label>
+    <label>备份保留份数
+      <input name="backup_keep" value="{{ backup_cfg.keep }}" style="width:70px">
+    </label>
+  </p>
+
+  <button type="submit">保存设置</button>
+</form>
+<p class="muted">
+  保存写入 <code>data/overrides.yaml</code>（叠加在 config.yaml 之上，不改动原文件与注释）；
+  多数参数<b>重启服务</b>后生效，模拟盘日报、候选初筛等每日任务下次运行即读取新值。
+  留空 = 保持原值；非法值会提示且不会写入。
+</p>
+
+<h2>最近作业</h2>
+<table>
+  <thead><tr><th>作业</th><th>开始时间</th><th>状态</th><th>耗时</th><th>详情</th></tr></thead>
+  <tbody>
+  {% for j in jobs %}
+    <tr>
+      <td>{{ j.job }}</td>
+      <td class="muted">{{ j.started_at.strftime("%m-%d %H:%M:%S") }}</td>
+      <td class="{{ 'ok' if j.status == 'ok' else ('bad' if j.status == 'error' else 'muted') }}">{{ j.status }}</td>
+      <td>{{ "%.1fs"|format((j.finished_at - j.started_at).total_seconds()) if j.finished_at else "运行中…" }}</td>
+      <td class="muted" style="font-size:12px">{{ (j.detail or "")[:120] }}</td>
+    </tr>
+  {% endfor %}
+  {% if not jobs %}
+    <tr><td colspan="5" class="muted">暂无作业记录（服务启动并运行任务后出现）。</td></tr>
+  {% endif %}
+  </tbody>
+</table>
+{% endblock %}

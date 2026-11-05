@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}候选池 · 投资助手{% endblock %}
+{% block content %}
+<h1>候选池{% if date %} <span class="muted" style="font-size:14px">（{{ date }}）</span>{% endif %}</h1>
+<p class="muted">每日 18:30 执行：初筛（价值/成长/趋势）→ <strong>买点评估</strong>（回踩支撑 / 突破在即 / 超跌企稳）→ <strong>经验校准</strong>（弱市剔除突破型、回踩降权、候选上限收紧）→ 每日最多取 5 只有明确买点的候选。点击「分析」生成 AI 分析卡（含具体买入计划与失效价）；加入自选后自动按计划盯盘、到价提醒。</p>
+<p class="muted" style="font-size:12px">经验校准说明可在每行「入选理由」中查看（如「经验校准：…权重 ×0.6」）。</p>
+<table>
+  <thead>
+    <tr><th>模板</th><th>买点</th><th>标的</th><th>评分</th><th>入选理由</th><th>状态</th><th>操作</th></tr>
+  </thead>
+  <tbody>
+  {% for row in rows %}
+    <tr>
+      <td>{{ row.template }}</td>
+      <td>{% if row.setup %}<strong>{{ row.setup }}</strong>{% else %}<span class="muted">—</span>{% endif %}</td>
+      <td>{{ row.c.code }}{% if row.name %}<br><span class="muted">{{ row.name }}</span>{% endif %}</td>
+      <td>{{ "%.1f"|format(row.c.score) }}</td>
+      <td class="muted" style="font-size:12px">{{ row.reasons|join("；") }}</td>
+      <td>{{ row.c.status }}</td>
+      <td>
+        <form class="inline" method="post" action="/cards/analyze">
+          <input type="hidden" name="code" value="{{ row.c.code }}">
+          <button type="submit" class="small">分析</button>
+        </form>
+        {% with code=row.c.code, watched=row.in_watchlist, source="候选池" %}{% include "card_watch_button.html" %}{% endwith %}
+      </td>
+    </tr>
+  {% endfor %}
+  {% if not rows %}
+    <tr><td colspan="7" class="muted">暂无候选。运行 <code>invest-assistant once screen</code> 或等待每日 18:30 任务。{% if date %}（最近日期：{{ date }}）{% endif %}</td></tr>
+  {% endif %}
+  </tbody>
+</table>
+{% endblock %}

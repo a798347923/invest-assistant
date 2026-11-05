@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}自选 · 投资助手{% endblock %}
+{% block content %}
+<h1>自选池</h1>
+{% if added %}<p class="ok">已加入自选。</p>{% endif %}
+{% if removed %}<p class="ok">已移除。</p>{% endif %}
+{% if error %}<p class="warn">操作失败：{{ error }}</p>{% endif %}
+
+<form class="row card" method="post" action="/watchlist" style="margin-bottom:16px;padding:14px">
+  <input name="code" placeholder="代码，如 600519 / 510300 / 011186" required>
+  <input name="group" placeholder="分组（默认 default）">
+  <input name="note" placeholder="备注">
+  <input name="alert_pct" placeholder="异动阈值%（空=默认5，0=关闭）" style="width:200px">
+  <input name="price_above" placeholder="≥ 上方提醒价" style="width:110px">
+  <input name="price_below" placeholder="≤ 下方提醒价" style="width:110px">
+  <button type="submit">加入自选</button>
+</form>
+<p class="muted" style="margin-top:-8px">
+  盘中监控：涨跌幅超阈值、或现价触及上/下提醒价时推送提醒（每项每条件每日一次）。
+  <strong>AI 买入计划提醒：</strong>对最新分析卡中的买入区间 / 突破确认价 / 失效价自动盯盘——
+  现价进入建议买入区间（或站上突破价）时推送「AI 买入机会」，跌破失效价时推送「AI 计划失效」；
+  可用每行的「计划监控」按钮开关（默认开，需先对该标的做过 AI 分析）。
+  重复添加同一代码 = 更新设置；空阈值 = 使用默认，填 0 = 关闭异动提醒。
+  随时可点「AI 分析」获取该标的的**具体操作计划**（买入区间/确认条件/失效价/参考目标/仓位建议，就地显示并存入分析卡）。
+</p>
+
+<table>
+  <thead>
+    <tr><th>代码</th><th>分组</th><th>盘中提醒</th><th>备注</th><th>加入时间</th><th>操作</th></tr>
+  </thead>
+  {% for row in rows %}{% include "watchlist_row.html" %}{% endfor %}
+  {% if not rows %}<tbody><tr><td colspan="6" class="muted">自选池为空。</td></tr></tbody>{% endif %}
+</table>
+{% endblock %}

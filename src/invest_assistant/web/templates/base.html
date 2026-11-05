@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}投资助手{% endblock %}</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/vendor/htmx.min.js" defer></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">📈 投资助手 {% include "_regime_badge.html" %}</div>
+  <nav>
+    <a href="/">总览</a>
+    <a href="/positions">持仓</a>
+    <a href="/watchlist">自选</a>
+    <a href="/candidates">候选池</a>
+    <a href="/cards">分析卡</a>
+    <a href="/paper">模拟盘</a>
+    <a href="/journal">复盘</a>
+    <a href="/alerts">提醒</a>
+    <a href="/backtests">回测</a>
+    <a href="/usage">用量</a>
+    <a href="/settings">设置</a>
+  </nav>
+</header>
+<main class="container">
+{% block content %}{% endblock %}
+</main>
+<footer class="footer">
+  个人自用工具 · 不构成投资建议 · <a href="/logout">退出</a>
+</footer>
+</body>
+</html>

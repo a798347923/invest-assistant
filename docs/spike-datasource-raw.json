@@ -1,0 +1,215 @@
+{
+  "generated_at": "2026-10-11T20:59:38",
+  "python": "3.14.6",
+  "akshare": "1.19.1",
+  "results": [
+    {
+      "name": "交易日历",
+      "ok": true,
+      "ms": 140,
+      "rows": 8797,
+      "sample": {
+        "func": "tool_trade_date_hist_sina",
+        "tail": [
+          {
+            "trade_date": "2026-12-29"
+          },
+          {
+            "trade_date": "2026-12-30"
+          },
+          {
+            "trade_date": "2026-12-31"
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "name": "A股日线(600519,前复权)",
+      "ok": false,
+      "ms": 48333,
+      "rows": null,
+      "sample": null,
+      "error": "ConnectionError: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))",
+      "trace_tail": "le \"<repo>\\.venv\\Lib\\site-packages\\requests\\sessions.py\", line 784, in send\n    r = adapter.send(request, **kwargs)\n  File \"<repo>\\.venv\\Lib\\site-packages\\requests\\adapters.py\", line 711, in send\n    raise ConnectionError(err, request=request)\nrequests.exceptions.ConnectionError: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))\n"
+    },
+    {
+      "name": "ETF日线(510300)",
+      "ok": false,
+      "ms": 16049,
+      "rows": null,
+      "sample": null,
+      "error": "ReadTimeout: HTTPSConnectionPool(host='push2his.eastmoney.com', port=443): Read timed out. (read timeout=15)",
+      "trace_tail": "s)\n  File \"<repo>\\.venv\\Lib\\site-packages\\requests\\sessions.py\", line 784, in send\n    r = adapter.send(request, **kwargs)\n  File \"<repo>\\.venv\\Lib\\site-packages\\requests\\adapters.py\", line 742, in send\n    raise ReadTimeout(e, request=request)\nrequests.exceptions.ReadTimeout: HTTPSConnectionPool(host='push2his.eastmoney.com', port=443): Read timed out. (read timeout=15)\n"
+    },
+    {
+      "name": "指数日线(000300)",
+      "ok": false,
+      "ms": 5531,
+      "rows": null,
+      "sample": null,
+      "error": "ConnectionError: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))",
+      "trace_tail": "le \"<repo>\\.venv\\Lib\\site-packages\\requests\\sessions.py\", line 784, in send\n    r = adapter.send(request, **kwargs)\n  File \"<repo>\\.venv\\Lib\\site-packages\\requests\\adapters.py\", line 711, in send\n    raise ConnectionError(err, request=request)\nrequests.exceptions.ConnectionError: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))\n"
+    },
+    {
+      "name": "全市场快照(东财)",
+      "ok": false,
+      "ms": 5967,
+      "rows": null,
+      "sample": null,
+      "error": "ConnectionError: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))",
+      "trace_tail": "le \"<repo>\\.venv\\Lib\\site-packages\\requests\\sessions.py\", line 784, in send\n    r = adapter.send(request, **kwargs)\n  File \"<repo>\\.venv\\Lib\\site-packages\\requests\\adapters.py\", line 711, in send\n    raise ConnectionError(err, request=request)\nrequests.exceptions.ConnectionError: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))\n"
+    },
+    {
+      "name": "单只实时行情(akshare)",
+      "ok": false,
+      "ms": 236,
+      "rows": null,
+      "sample": null,
+      "error": "ConnectionError: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))",
+      "trace_tail": "le \"<repo>\\.venv\\Lib\\site-packages\\requests\\sessions.py\", line 784, in send\n    r = adapter.send(request, **kwargs)\n  File \"<repo>\\.venv\\Lib\\site-packages\\requests\\adapters.py\", line 711, in send\n    raise ConnectionError(err, request=request)\nrequests.exceptions.ConnectionError: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))\n"
+    },
+    {
+      "name": "新浪批量实时行情",
+      "ok": true,
+      "ms": 1359,
+      "rows": 5,
+      "sample": {
+        "latency_ms_3runs": [
+          1139,
+          111,
+          109
+        ],
+        "first": "var hq_str_sh600519=\"贵州茅台,1255.420,1255.790,1263.000,1282.000,1255.420,1263.000,1263.060,3"
+      },
+      "error": null
+    },
+    {
+      "name": "东财直连实时行情",
+      "ok": true,
+      "ms": 639,
+      "rows": null,
+      "sample": {
+        "latency_ms_3runs": [
+          208,
+          214,
+          217
+        ],
+        "data": {
+          "f43": 126300,
+          "f57": "600519",
+          "f58": "贵州茅台",
+          "f60": 125579,
+          "f170": 57
+        }
+      },
+      "error": null
+    },
+    {
+      "name": "场外基金净值(011186)",
+      "ok": true,
+      "ms": 100,
+      "rows": 1330,
+      "sample": {
+        "func": "fund_open_fund_info_em",
+        "tail": [
+          {
+            "净值日期": "2026-10-08",
+            "单位净值": "0.7022",
+            "日增长率": "-5.18"
+          },
+          {
+            "净值日期": "2026-10-09",
+            "单位净值": "0.6908",
+            "日增长率": "-1.62"
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "name": "基金盘中估值(fundgz)",
+      "ok": true,
+      "ms": 157,
+      "rows": null,
+      "sample": {
+        "latency_ms_3runs": [
+          130,
+          14,
+          12
+        ],
+        "body": "\n<!doctype html>\n<html>\n<head> \n<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" /> \n<title>é¡µé¢æªæ¾å° - ä¸æ¹è´¢å¯ç½</title"
+      },
+      "error": null
+    },
+    {
+      "name": "个股新闻(600519)",
+      "ok": true,
+      "ms": 110,
+      "rows": 10,
+      "sample": {
+        "func": "stock_news_em",
+        "head": [
+          {
+            "发布时间": "2026-10-06 08:44:00",
+            "新闻标题": "贵州茅台：今日暂停！"
+          },
+          {
+            "发布时间": "2026-10-09 17:57:00",
+            "新闻标题": "深沪北百元股数量达192只，电子行业占比最高"
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "name": "个股公告(600519)",
+      "ok": true,
+      "ms": 756,
+      "rows": 35,
+      "sample": {
+        "func": "stock_zh_a_disclosure_report_cninfo",
+        "head": [
+          {
+            "代码": "600519",
+            "简称": "贵州茅台",
+            "公告标题": "贵州茅台2023年度回报股东特别分红实施公告",
+            "公告时间": "2023-12-14",
+            "公告链接": "http://www.cninfo.com.cn/new/disclosure/detail?stockCode=600519&announcementId=1218606528&orgId=gssh0600519&announcementTime=2023-12-14"
+          },
+          {
+            "代码": "600519",
+            "简称": "贵州茅台",
+            "公告标题": "北京市金杜律师事务所关于贵州茅台酒股份有限公司2023年第二次临时股东大会之法律意见书",
+            "公告时间": "2023-12-07",
+            "公告链接": "http://www.cninfo.com.cn/new/disclosure/detail?stockCode=600519&announcementId=1218535834&orgId=gssh0600519&announcementTime=2023-12-07"
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "name": "财务数据(600519)",
+      "ok": true,
+      "ms": 656,
+      "rows": 80,
+      "sample": {
+        "func": "stock_financial_abstract",
+        "shape": "(80, 105)"
+      },
+      "error": null
+    },
+    {
+      "name": "akshare 基金估值类函数扫描",
+      "ok": true,
+      "ms": 0,
+      "rows": null,
+      "sample": {
+        "fund_estimate_like": [
+          "fund_value_estimation_em"
+        ]
+      },
+      "error": null
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}持仓 · 投资助手{% endblock %}
+{% block content %}
+<h1>持仓</h1>
+
+{% if created %}<p class="ok">已建仓。</p>{% endif %}
+{% if sold %}<p class="ok">已卖出。</p>{% endif %}
+{% if error %}<p class="warn">操作失败：{{ error }}</p>{% endif %}
+{% if quote_error %}<p class="muted">行情获取失败，仅显示成本信息：{{ quote_error }}</p>{% endif %}
+
+<details class="card" style="margin-bottom:16px">
+  <summary><strong>＋ 建仓（退出规则必填）</strong></summary>
+  <form method="post" action="/positions" class="form-grid">
+    <label>代码<input name="code" placeholder="600519" required></label>
+    <label>名称<input name="name" placeholder="可留空"></label>
+    <label>数量<input name="qty" type="number" step="0.01" required></label>
+    <label>买入价<input name="price" type="number" step="0.001" required></label>
+    <label>策略
+      <select name="strategy">
+        <option value="value">价值</option>
+        <option value="growth">成长</option>
+        <option value="swing">波段</option>
+        <option value="drip">定投</option>
+      </select>
+    </label>
+    <label>止盈线 %<input name="take_profit" type="number" step="0.1" placeholder="20" required></label>
+    <label>止损线 %<input name="stop_loss" type="number" step="0.1" placeholder="可选"></label>
+    <label>移动止盈回撤 %<input name="trailing" type="number" step="0.1" placeholder="8"></label>
+    <label>最长持有期（天）<input name="max_holding" type="number" placeholder="90" required></label>
+    <label>手续费<input name="fee" type="number" step="0.01" value="0"></label>
+    <label>备注<input name="note"></label>
+    <div class="form-actions"><button type="submit">建仓</button></div>
+  </form>
+  <p class="muted">止损线与移动止盈至少填一个；不完整的退出规则会被拒绝保存。</p>
+</details>
+
+<table>
+  <thead>
+    <tr>
+      <th>#</th><th>标的</th><th>策略</th><th>数量</th><th>成本</th><th>现价</th>
+      <th>浮盈亏</th><th>持有</th><th>规则</th><th>卖出</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for row in rows %}
+    <tr>
+      <td>{{ row.p.id }}</td>
+      <td>{{ row.p.code }}{% if row.name %}<br><span class="muted">{{ row.name }}</span>{% endif %}</td>
+      <td>{{ row.p.strategy }}</td>
+      <td>{{ "%g"|format(row.p.qty) }}</td>
+      <td>{{ "%.4f"|format(row.p.avg_cost) }}</td>
+      <td>
+        {{ "%.4f"|format(row.price) if row.price is not none else "—" }}
+        {% if row.price_label %}<br><span class="muted" style="font-size:11px">{{ row.price_label }}</span>{% endif %}
+      </td>
+      <td>
+        {% if row.pnl is not none %}
+          <span class="{{ 'ok' if row.pnl >= 0 else 'bad' }}">{{ "%+.2f"|format(row.pnl) }}</span>
+          <span class="muted">({{ "%+.2f"|format(row.pct) }}%)</span>
+        {% else %}—{% endif %}
+      </td>
+      <td>{{ row.days }} 天</td>
+      <td class="muted small">{{ row.rules|join("；") }}</td>
+      <td>
+        <form class="inline" method="post" action="/positions/{{ row.p.id }}/sell">
+          <input name="qty" type="number" step="0.01" value="{{ '%g'|format(row.p.qty) }}" style="width:70px">
+          <input name="price" type="number" step="0.001" placeholder="价格" style="width:80px">
+          <button type="submit" class="small">卖</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  {% if not rows %}
+    <tr><td colspan="10" class="muted">暂无持仓。点击上方「建仓」录入第一笔（退出规则为必填）。</td></tr>
+  {% endif %}
+  </tbody>
+</table>
+{% endblock %}

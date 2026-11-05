@@ -1,0 +1,10 @@
+{% if watched %}
+<span class="muted" style="font-size:12px">已在自选池 ✓ <a href="/watchlist">查看自选</a></span>
+{% else %}
+<form class="inline" method="post" action="/cards/watch"
+      hx-post="/cards/watch" hx-target="this" hx-swap="outerHTML">
+  <input type="hidden" name="code" value="{{ code }}">
+  {% if source %}<input type="hidden" name="source" value="{{ source }}">{% endif %}
+  <button type="submit" class="small ghost">＋ 加入自选</button>
+</form>
+{% endif %}

@@ -1,0 +1,67 @@
+<tbody id="watch-{{ row.i.code }}">
+<tr>
+  <td>{{ row.i.code }}</td>
+  <td>{{ row.i.group }}</td>
+  <td class="muted" style="font-size:12px">
+    {% if row.i.alert_pct is none %}异动±默认{% elif row.i.alert_pct > 0 %}异动±{{ "%g"|format(row.i.alert_pct) }}%{% else %}异动关闭{% endif %}
+    {% if row.i.alert_price_above %}｜≥{{ "%g"|format(row.i.alert_price_above) }}{% endif %}
+    {% if row.i.alert_price_below %}｜≤{{ "%g"|format(row.i.alert_price_below) }}{% endif %}
+    {% if row.plan and (row.plan.zone_high is not none or row.plan.breakout is not none or row.plan.stop is not none) %}
+      <br><span{% if not row.i.alert_plan %} class="muted"{% endif %}>AI 买入{% if not row.i.alert_plan %}（已关）{% endif %}：
+        {%- if row.plan.zone_low is not none and row.plan.zone_high is not none -%}
+          {%- if row.plan.zone_low == row.plan.zone_high %} {{ "%g"|format(row.plan.zone_high) }}
+          {%- else %} {{ "%g"|format(row.plan.zone_low) }}~{{ "%g"|format(row.plan.zone_high) }}{% endif -%}
+        {%- elif row.plan.zone_high is not none %} {{ "%g"|format(row.plan.zone_high) -}}
+        {%- endif %}
+        {%- if row.plan.breakout is not none %}｜突破 {{ "%g"|format(row.plan.breakout) }}{% endif %}
+        {%- if row.plan.stop is not none %}｜失效 {{ "%g"|format(row.plan.stop) }}{% endif %}
+      </span>
+    {% endif %}
+  </td>
+  <td class="muted">{{ row.i.note }}</td>
+  <td class="muted">{{ row.i.added_at.strftime("%Y-%m-%d %H:%M") }}</td>
+  <td>
+    <form class="inline" method="post" action="/watchlist/{{ row.i.code }}/insight"
+          hx-post="/watchlist/{{ row.i.code }}/insight"
+          hx-target="closest tbody" hx-swap="outerHTML" hx-disabled-elt="find button">
+      <button type="submit" class="small ghost">AI 分析</button>
+      <span class="htmx-indicator muted" style="font-size:11px">分析中…</span>
+    </form>
+    {% if row.plan %}
+    <form class="inline" method="post" action="/watchlist/{{ row.i.code }}/toggle-plan"
+          hx-post="/watchlist/{{ row.i.code }}/toggle-plan"
+          hx-target="closest tbody" hx-swap="outerHTML">
+      <button type="submit" class="small ghost">计划监控：{{ "开" if row.i.alert_plan else "关" }}</button>
+    </form>
+    {% endif %}
+    <form class="inline" method="post" action="/watchlist/{{ row.i.code }}/delete">
+      <button type="submit" class="small ghost">移除</button>
+    </form>
+  </td>
+</tr>
+{% if row.insight_error or row.last_card %}
+<tr>
+  <td colspan="6" style="background:#fafbfc">
+    {% if row.insight_error %}
+      <div class="bad" style="font-size:12px">{{ row.insight_error }}</div>
+    {% endif %}
+    {% if row.last_card %}
+    <div style="font-size:13px">
+      <strong>【AI 分析】</strong>
+      <span class="muted" style="font-size:11px">
+        {{ row.last_card.created_at.strftime("%m-%d %H:%M") }} · {{ row.last_card.model }}
+      </span>
+      <p style="margin:4px 0">{{ row.last_card.content_json.summary }}</p>
+      <span class="muted" style="font-size:11px">
+        倾向 {{ row.last_card.content_json.action_bias or "—" }}
+        {%- if row.plan and row.plan.zone_text %} · 计划买入 {{ row.plan.zone_text }}{% endif %}
+        {%- if row.plan and row.plan.stop_text %} · 失效 {{ row.plan.stop_text }}{% endif %}
+        · 置信度 {{ "%.2f"|format(row.last_card.content_json.confidence or 0) }}
+        · <a href="/cards">查看完整卡（含操作计划）</a>
+      </span>
+    </div>
+    {% endif %}
+  </td>
+</tr>
+{% endif %}
+</tbody>

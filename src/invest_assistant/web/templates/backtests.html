@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}回测 · 投资助手{% endblock %}
+{% block content %}
+<h1>回测</h1>
+<p class="muted">
+  规则级回测：动量信号 + 止盈/止损/移动止盈/持有期（与实盘共用同一规则引擎），
+  计佣金/印花税/滑点。首次运行需拉取行情，可能耗时数十秒到数分钟。
+</p>
+
+<form class="card" method="post" action="/backtests/run" style="padding:14px;margin-bottom:16px">
+  <div class="row">
+    <label>开始 <input type="date" name="start" value="{{ default_start }}"></label>
+    <label>结束 <input type="date" name="end" value="{{ today }}"></label>
+    <label>槽位 <input type="number" name="slots" value="5" style="width:60px"></label>
+    <label>初始资金 <input type="number" name="initial_cash" value="200000" style="width:100px"></label>
+    <label>标的池数量 <input type="number" name="universe_top" value="150" style="width:70px"></label>
+  </div>
+  <div class="row" style="margin-top:8px">
+    <label>止盈 % <input type="number" step="0.1" name="take_profit" value="20" style="width:70px"></label>
+    <label>止损 % <input type="number" step="0.1" name="stop_loss" value="10" style="width:70px"></label>
+    <label>移动止盈回撤 % <input type="number" step="0.1" name="trailing" value="8" style="width:70px"></label>
+    <label>最长持有 天 <input type="number" name="max_holding" value="60" style="width:70px"></label>
+    <button type="submit">开始回测</button>
+  </div>
+</form>
+
+<h2 style="font-size:16px">历史回测</h2>
+<table>
+  <thead><tr><th>#</th><th>创建时间</th><th>区间</th><th>状态</th><th>收益</th><th>回撤</th><th>交易</th><th></th></tr></thead>
+  <tbody>
+  {% for item in runs %}
+    <tr>
+      <td>{{ item.r.id }}</td>
+      <td class="muted">{{ item.r.created_at.strftime("%m-%d %H:%M") }}</td>
+      <td class="muted">{{ item.params.start }} ~ {{ item.params.end }}</td>
+      <td>
+        {% if item.r.status == "done" %}<span class="ok">完成</span>
+        {% elif item.r.status == "error" %}<span class="bad">失败</span>
+        {% else %}{{ item.r.status }} {{ "%.0f"|format(item.r.progress or 0) }}%{% endif %}
+      </td>
+      <td>{{ ("%.2f%%"|format(item.stats.total_return_pct)) if item.stats else "—" }}</td>
+      <td>{{ ("%.2f%%"|format(item.stats.max_drawdown_pct)) if item.stats else "—" }}</td>
+      <td>{{ item.stats.trades if item.stats else "—" }}</td>
+      <td><a class="btn small ghost" href="/backtests?run_id={{ item.r.id }}">查看</a></td>
+    </tr>
+  {% endfor %}
+  {% if not runs %}<tr><td colspan="8" class="muted">暂无回测</td></tr>{% endif %}
+  </tbody>
+</table>
+
+{% if current and current.r.status == "done" and current.r.result_json %}
+<h2 style="font-size:16px;margin-top:24px">回测 #{{ current.r.id }} 结果</h2>
+{% set stats = current.stats %}
+<div class="cards" style="margin-bottom:14px">
+  <div class="card"><div class="label">总收益</div><div class="value">{{ "%.2f"|format(stats.total_return_pct) }}%</div></div>
+  <div class="card"><div class="label">年化</div><div class="value">{{ "%.2f"|format(stats.annualized_pct) }}%</div></div>
+  <div class="card"><div class="label">最大回撤</div><div class="value">{{ "%.2f"|format(stats.max_drawdown_pct) }}%</div></div>
+  <div class="card"><div class="label">胜率</div><div class="value">{{ "%.1f"|format(stats.win_rate_pct) }}%</div></div>
+  <div class="card"><div class="label">交易数</div><div class="value">{{ stats.trades }}</div></div>
+  <div class="card"><div class="label">基准（沪深300）</div><div class="value">{{ ("%.2f%%"|format(stats.benchmark_return_pct)) if stats.benchmark_return_pct is not none else "—" }}</div></div>
+</div>
+
+<div id="equity-chart" style="width:100%;height:360px;background:#fff;border:1px solid #e5e7eb;border-radius:10px"></div>
+<script src="/static/vendor/echarts.min.js"></script>
+<script>
+  const equity = {{ current.r.result_json.equity|tojson }};
+  const benchmark = {{ current.r.result_json.benchmark|tojson }};
+  const toPairs = (arr) => arr.map((p) => [p[0], p[1]]);
+  const series = [{ name: "策略", type: "line", showSymbol: false, data: toPairs(equity) }];
+  if (benchmark.length) {
+    series.push({ name: "沪深300", type: "line", showSymbol: false,
+                  data: toPairs(benchmark), lineStyle: { type: "dashed" } });
+  }
+  echarts.init(document.getElementById("equity-chart")).setOption({
+    tooltip: { trigger: "axis" },
+    legend: { data: series.map((s) => s.name) },
+    grid: { left: 75, right: 20, top: 40, bottom: 30 },
+    xAxis: { type: "time" },
+    yAxis: { type: "value", scale: true },
+    series: series,
+  });
+</script>
+
+<h3 style="font-size:15px;margin-top:20px">交易明细（最近 30 笔）</h3>
+<table>
+  <thead><tr><th>代码</th><th>买入日</th><th>卖出日</th><th>买入价</th><th>卖出价</th><th>数量</th><th>盈亏</th><th>原因</th></tr></thead>
+  <tbody>
+  {% for t in current.r.result_json.trades[-30:] %}
+    <tr>
+      <td>{{ t.code }}</td><td class="muted">{{ t.entry_date }}</td><td class="muted">{{ t.exit_date }}</td>
+      <td>{{ "%.3f"|format(t.entry) }}</td><td>{{ "%.3f"|format(t.exit) }}</td>
+      <td>{{ t.qty }}</td>
+      <td class="{{ 'ok' if t.pnl >= 0 else 'bad' }}">{{ "%+.2f"|format(t.pnl) }}</td>
+      <td class="muted">{{ t.reason }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h3 style="font-size:15px;margin-top:16px">口径与局限</h3>
+<ul class="muted" style="font-size:13px">
+  {% for note in current.r.result_json.notes %}<li>{{ note }}</li>{% endfor %}
+</ul>
+{% elif current and current.r.status == "error" %}
+<p class="warn">回测 #{{ current.r.id }} 失败：{{ current.r.error }}</p>
+{% endif %}
+{% endblock %}

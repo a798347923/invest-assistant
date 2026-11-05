@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}模拟盘 · 投资助手{% endblock %}
+{% block content %}
+<h1>模拟盘 <span class="muted" style="font-size:13px">（纸面交易：买点自动买入 → 每日 AI 建议 → 次日自动执行）</span></h1>
+
+<div class="row" style="gap:10px;flex-wrap:wrap;margin:10px 0">
+  <div class="card" style="padding:10px 14px;min-width:150px">
+    <div class="muted" style="font-size:12px">总资产</div>
+    <div style="font-size:20px"><strong>{{ "%.0f"|format(stats.equity) }}</strong> 元</div>
+  </div>
+  <div class="card" style="padding:10px 14px;min-width:150px">
+    <div class="muted" style="font-size:12px">累计收益率</div>
+    <div style="font-size:20px" class="{{ 'ok' if stats.total_pnl_pct >= 0 else 'bad' }}">
+      <strong>{{ "%+.2f"|format(stats.total_pnl_pct) }}%</strong>（{{ "%+.0f"|format(stats.total_pnl) }}）
+    </div>
+  </div>
+  <div class="card" style="padding:10px 14px;min-width:130px">
+    <div class="muted" style="font-size:12px">今日盈亏</div>
+    <div class="{{ 'ok' if stats.day_pnl >= 0 else 'bad' }}">{{ "%+.0f"|format(stats.day_pnl) }} 元</div>
+  </div>
+  <div class="card" style="padding:10px 14px;min-width:110px">
+    <div class="muted" style="font-size:12px">现金</div>
+    <div>{{ "%.0f"|format(stats.cash) }}</div>
+  </div>
+  <div class="card" style="padding:10px 14px;min-width:110px">
+    <div class="muted" style="font-size:12px">持仓市值</div>
+    <div>{{ "%.0f"|format(stats.market_value) }}</div>
+  </div>
+  {% if stats.parking_value and stats.parking_value > 0 %}
+  <div class="card" style="padding:10px 14px;min-width:110px">
+    <div class="muted" style="font-size:12px">弱市停泊</div>
+    <div>{{ "%.0f"|format(stats.parking_value) }}</div>
+  </div>
+  {% endif %}
+  <div class="card" style="padding:10px 14px;min-width:110px">
+    <div class="muted" style="font-size:12px">初始资金</div>
+    <div>{{ "%.0f"|format(stats.initial_cash) }}</div>
+  </div>
+</div>
+
+<p class="muted">
+  规则：自选池触发「AI 买入计划」买点，<strong>且计划确认条件全部满足</strong>（缩量收稳 / 放量阳线 / 站上均线等，每分钟本地校验，旧卡自动从文字解析）
+  → 自动买入（单笔 ≈ 总资产 × 20%，最多 5 只）；
+  <strong>每次买卖前 AI 复核，反对即取消本次操作</strong>（纪律止损、机械止盈/减半与到期清仓默认豁免复核，保命/落袋优先；问不到模型时：买入保守取消、卖出按原计划）；
+  <strong>回放经验 v12 已固化</strong>：弱市（双指数+滞回）暂停自动买入，且<strong>默认不推送「买入计划」到价提醒</strong>（异动/失效价/持仓提醒照常；可在 <code>watchlist.suppress_plan_alerts_in_weak</code> 调整）；回踩型须上证站上 20 日线，且多重确认（站上MA5 + 收复前日高点 + MA20 上行）；机械止损按形态区分（回踩 近10日低−1×ATR / 突破 ×0.95，入场时固化，跌破即清仓）；突破目标 +12%，<strong>到 +10% 自动减半</strong>（余仓继续持有），持有上限 30 个交易日；
+  <strong>盘中跌破失效价 → 1 分钟内纪律清仓</strong>（不再等日报）；
+  每日 15:40 生成 AI 操作建议（加仓/减仓/清仓/持有）并邮件+微信推送；
+  建议在<b>下一交易日开盘自动执行</b>。持仓现价 / 浮动盈亏 / 总资产随盘中轮询（每 1 分钟）自动刷新。
+  资金与仓位参数见 <code>config/config.yaml</code> 的 <code>paper</code> 段（初始资金可自由调整，改后重启生效）。
+</p>
+
+{% if report.summary %}
+<div class="card" style="padding:12px;margin:12px 0;background:#f8fafc">
+  <strong>最新日报（{{ report.date }} · {{ report.status }}）</strong>
+  <p style="margin:6px 0">{{ report.summary }}</p>
+  {% if report.risk_notes %}
+    <p class="muted" style="margin:4px 0">风险提示：{{ report.risk_notes|join("；") }}</p>
+  {% endif %}
+  {% if report.executed %}
+    <p style="margin:4px 0;font-size:13px">
+      已执行：
+      {% for a in report.executed %}· {{ a.action }} {{ a.code }} {{ "%g"|format(a.qty) }}股 @ {{ "%.4f"|format(a.price) }}（{{ "%+.0f"|format(a.realized_pnl) if a.realized_pnl is not none else "—" }}元）{% endfor %}
+    </p>
+  {% endif %}
+  {% if report.skipped %}
+    <p class="muted" style="margin:4px 0;font-size:12px">
+      未执行：{% for s in report.skipped %}{{ s.code }} {{ s.action }}（{{ s.reason }}）{% if not loop.last %}；{% endif %}{% endfor %}
+    </p>
+  {% endif %}
+</div>
+{% endif %}
+
+<h2>持仓</h2>
+<table>
+  <thead>
+    <tr><th>代码</th><th>数量</th><th>成本</th><th>现价</th><th>浮动盈亏</th><th>持有天数</th><th>AI 计划价位</th><th>最新建议</th></tr>
+  </thead>
+  <tbody>
+  {% for row in rows %}
+    <tr>
+      <td>{{ row.p.code }}{% if row.p.name and row.p.name != row.p.code %}<br><span class="muted">{{ row.p.name }}</span>{% endif %}</td>
+      <td>{{ "%g"|format(row.p.qty) }}</td>
+      <td>{{ "%.4f"|format(row.p.avg_cost) }}</td>
+      <td>{{ "%.4f"|format(row.price) }}</td>
+      <td class="{{ 'ok' if row.pnl >= 0 else 'bad' }}">{{ "%+.0f"|format(row.pnl) }}（{{ "%+.2f"|format(row.pnl_pct) }}%）</td>
+      <td>{{ row.holding_days }}</td>
+      <td class="muted" style="font-size:12px">
+        {% if row.plan %}
+          {%- if row.plan.zone_low is not none and row.plan.zone_high is not none %}区间 {{ "%g"|format(row.plan.zone_low) }}~{{ "%g"|format(row.plan.zone_high) }}{% endif %}
+          {%- if row.plan.breakout is not none %}｜突破 {{ "%g"|format(row.plan.breakout) }}{% endif %}
+          {%- if row.plan.stop is not none %}｜失效 {{ "%g"|format(row.plan.stop) }}{% endif %}
+        {% else %}—{% endif %}
+      </td>
+      <td style="font-size:12px">
+        {% if row.advice %}
+          <strong>{{ row.advice.action }}{% if row.advice.qty_pct and row.advice.action in ("加仓", "减仓") %} {{ "%g"|format(row.advice.qty_pct) }}%{% endif %}</strong>
+          <br><span class="muted">{{ row.advice.reason }}</span>
+        {% else %}—{% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  {% if not rows %}<tr><td colspan="8" class="muted">暂无持仓（自选池标的触发 AI 买点后自动买入）。</td></tr>{% endif %}
+  </tbody>
+</table>
+
+<h2>成交记录</h2>
+<table>
+  <thead><tr><th>时间</th><th>方向</th><th>标的</th><th>数量</th><th>价格</th><th>金额</th><th>费用</th><th>原因</th></tr></thead>
+  <tbody>
+  {% for t in trades %}
+    <tr>
+      <td class="muted">{{ t.ts.strftime("%m-%d %H:%M") }}</td>
+      <td>{{ "买入" if t.side == "buy" else "卖出" }}</td>
+      <td>{{ t.code }}</td>
+      <td>{{ "%g"|format(t.qty) }}</td>
+      <td>{{ "%.4f"|format(t.price) }}</td>
+      <td>{{ "%.0f"|format(t.amount) }}</td>
+      <td class="muted">{{ "%.2f"|format(t.fee) }}</td>
+      <td class="muted" style="font-size:12px">{{ t.reason }}</td>
+    </tr>
+  {% endfor %}
+  {% if not trades %}<tr><td colspan="8" class="muted">暂无成交。</td></tr>{% endif %}
+  </tbody>
+</table>
+
+<h2>每日收益</h2>
+<table>
+  <thead><tr><th>日期</th><th>总资产</th><th>现金</th><th>市值</th><th>当日盈亏</th><th>累计收益率</th><th>持仓数</th></tr></thead>
+  <tbody>
+  {% for d in dailies %}
+    <tr>
+      <td>{{ d.date.isoformat() }}</td>
+      <td>{{ "%.0f"|format(d.equity) }}</td>
+      <td>{{ "%.0f"|format(d.cash) }}</td>
+      <td>{{ "%.0f"|format(d.market_value) }}</td>
+      <td class="{{ 'ok' if d.day_pnl >= 0 else 'bad' }}">{{ "%+.0f"|format(d.day_pnl) }}</td>
+      <td class="{{ 'ok' if d.total_pnl_pct >= 0 else 'bad' }}">{{ "%+.2f"|format(d.total_pnl_pct) }}%</td>
+      <td>{{ d.positions }}</td>
+    </tr>
+  {% endfor %}
+  {% if not dailies %}<tr><td colspan="7" class="muted">暂无快照（每日 15:40 生成）。</td></tr>{% endif %}
+  </tbody>
+</table>
+{% endblock %}

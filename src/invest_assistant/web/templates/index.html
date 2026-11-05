@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}总览 · 投资助手{% endblock %}
+{% block content %}
+<h1>总览</h1>
+<div class="cards">
+  <div class="card">
+    <div class="label">开放持仓</div>
+    <div class="value">{{ status.open_positions }}</div>
+  </div>
+  <div class="card">
+    <div class="label">待投递提醒</div>
+    <div class="value">{{ status.pending_alerts }}</div>
+  </div>
+  <div class="card">
+    <div class="label">最近轮询</div>
+    <div class="value small">{{ status.last_poll_at or "尚未轮询" }}</div>
+  </div>
+  <div class="card">
+    <div class="label">版本</div>
+    <div class="value small">{{ status.version }}</div>
+  </div>
+</div>
+{% if status.db_error %}
+<p class="warn">数据库提示：{{ status.db_error }}</p>
+{% endif %}
+<p class="muted">持仓、提醒历史等页面将在后续任务中逐步开放。数据时间：{{ status.time }}</p>
+{% endblock %}

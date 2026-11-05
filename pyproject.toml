@@ -1,0 +1,85 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "invest-assistant"
+version = "0.4.0"
+description = "A-share investment discipline assistant: screening, LLM analysis, mechanical exits, paper trading, and backtesting (research only)."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "invest-assistant contributors" }]
+license = { text = "MIT" }
+keywords = ["a-share", "quant", "llm", "trading", "backtesting", "paper-trading"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
+dependencies = [
+    "requests>=2.32",
+    "akshare==1.19.1",
+    "pandas>=2.2",
+    "PyYAML>=6.0",
+    "SQLAlchemy>=2.0",
+    "alembic>=1.13",
+    "APScheduler>=3.10",
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "jinja2>=3.1",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "typer>=0.12",
+    "tenacity>=8.3",
+    "openai>=1.40",
+    "python-multipart>=0.0.9",
+    "bcrypt>=4.1",
+    "itsdangerous>=2.2",
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.6",
+]
+
+[project.scripts]
+invest-assistant = "invest_assistant.__main__:app"
+
+[project.urls]
+Homepage = "https://github.com/a798347923/invest-assistant"
+Repository = "https://github.com/a798347923/invest-assistant"
+Issues = "https://github.com/a798347923/invest-assistant/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["live: 真实网络冒烟测试（默认跳过，用 -m live 运行）"]
+addopts = "-m 'not live'"
+
+[tool.ruff]
+# 中文注释与提示词文案按语义换行，行宽只作提示；见 lint.ignore 的 E501 说明
+line-length = 120
+target-version = "py311"
+exclude = ["data", "logs", ".venv", "src/invest_assistant/web/static", "scripts/spike_*.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = [
+    # 中文注释/LLM 提示词按句读换行比按列宽换行更可读，不适合机械强制
+    "E501",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# 测试里的 raise 常是"断言失败即抛"，无底层异常可链
+"tests/**" = ["B904"]

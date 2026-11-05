@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}分析卡 · 投资助手{% endblock %}
+{% block content %}
+<h1>分析卡</h1>
+{% if done %}<p class="ok">分析完成。</p>{% endif %}
+{% if error %}<p class="warn">分析失败：{{ error }}</p>{% endif %}
+
+<form class="row card" method="post" action="/cards/analyze" style="margin-bottom:16px;padding:14px">
+  <input name="code" placeholder="代码，如 600519 / 510300" required>
+  <select name="type">
+    <option value="">类型自动</option>
+    <option value="a_share">A股</option>
+    <option value="etf">ETF</option>
+    <option value="otc_fund">场外基金</option>
+  </select>
+  <button type="submit">生成分析卡（AI，约 3~5 秒）</button>
+</form>
+
+{% for row in rows %}
+<details class="card" style="margin-bottom:10px;padding:12px 16px">
+  <summary>
+    <strong>{{ row.c.code }}</strong>
+    <span class="muted">· {{ row.c.created_at.strftime("%m-%d %H:%M") }} · {{ row.c.model }} · 费用 ¥{{ "%.4f"|format(row.c.cost or 0) }}</span>
+    {% if row.content.action_bias %}· <strong>{{ row.content.action_bias }}</strong>{% endif %}
+  </summary>
+  <div class="row" style="margin:2px 0 6px">
+    {% with code=row.c.code, watched=row.in_watchlist %}{% include "card_watch_button.html" %}{% endwith %}
+  </div>
+  <p><strong>结论：</strong>{{ row.content.summary }}</p>
+  {% if row.content.plan %}
+  <div style="margin:8px 0;padding:10px 12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;font-size:13px">
+    <strong>【操作计划】</strong>
+    {% if row.content.plan.entry_zone %}
+      <span style="margin-left:8px">买入区间：<strong>{{ row.content.plan.entry_zone }}</strong></span>
+    {% endif %}
+    {% if row.content.plan.position_hint %}<div style="margin-top:4px">仓位：{{ row.content.plan.position_hint }}</div>{% endif %}
+    {% if row.content.plan.triggers %}<div style="margin-top:4px">确认条件：{{ row.content.plan.triggers|join("；") }}</div>{% endif %}
+    {% if row.content.plan.stop_level %}<div style="margin-top:4px">失效价：<span class="bad">{{ row.content.plan.stop_level }}</span></div>{% endif %}
+    {% if row.content.plan.targets %}<div style="margin-top:4px">参考目标：{{ row.content.plan.targets|join("；") }}</div>{% endif %}
+  </div>
+  {% endif %}
+  {% if row.content.technicals %}<p><strong>技术面：</strong>{{ row.content.technicals }}</p>{% endif %}
+  {% if row.content.news_sentiment %}<p><strong>消息面：</strong>{{ row.content.news_sentiment }}</p>{% endif %}
+  <div class="row" style="align-items:flex-start">
+    <div style="flex:1;min-width:220px">
+      <p class="ok"><strong>多头因素</strong></p>
+      <ul>{% for x in row.content.bull_points or [] %}<li>{{ x }}</li>{% endfor %}</ul>
+    </div>
+    <div style="flex:1;min-width:220px">
+      <p class="bad"><strong>空头因素</strong></p>
+      <ul>{% for x in row.content.bear_points or [] %}<li>{{ x }}</li>{% endfor %}</ul>
+    </div>
+  </div>
+  {% if row.content.risks %}
+  <p><strong>风险提示</strong></p>
+  <ul>{% for x in row.content.risks %}<li>{{ x }}</li>{% endfor %}</ul>
+  {% endif %}
+  {% if row.content.confidence is not none %}<p class="muted">置信度：{{ "%.2f"|format(row.content.confidence or 0) }}</p>{% endif %}
+  {% if row.content.data_caveats %}<p class="muted">数据局限：{{ row.content.data_caveats }}</p>{% endif %}
+  <p class="muted">
+    数据来源：{{ row.sources.prices or "—" }}；新闻 {{ (row.sources.news or [])|length }} 条。
+    本卡由 AI 生成，仅供参考，不构成投资建议。
+  </p>
+</details>
+{% endfor %}
+{% if not rows %}<p class="muted">暂无分析卡。输入代码生成第一张。</p>{% endif %}
+{% endblock %}

@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+
+# Secrets & local config
+.env
+.env.*
+!.env.example
+config/secrets.*
+*.pem
+*.key
+
+# Runtime data & logs
+data/
+logs/
+*.log
+*.db
+*.db-journal
+*.db-wal
+
+# Test & tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# OS / editors
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
